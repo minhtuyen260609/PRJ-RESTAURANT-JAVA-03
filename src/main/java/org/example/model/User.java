@@ -1,18 +1,16 @@
 package org.example.model;
 
-import org.example.constant.Role;
-
 public class User {
     private int id;
     private String username;
     private String password;
-    private Role role;
+    private String role;
     private boolean active;
 
     public User() {
     }
 
-    public User(int id, String username, String password, Role role, boolean active) {
+    public User(int id, String username, String password, String role, boolean active) {
         this.id = id;
         this.username = username;
         this.password = password;
@@ -44,11 +42,11 @@ public class User {
         this.password = password;
     }
 
-    public Role getRole() {
+    public String getRole() {
         return role;
     }
 
-    public void setRole(Role role) {
+    public void setRole(String role) {
         this.role = role;
     }
 
@@ -58,15 +56,5 @@ public class User {
 
     public void setActive(boolean active) {
         this.active = active;
-    }
-
-    @Override
-    public String toString() {
-        return "User{" +
-                "id=" + id +
-                ", username='" + username + '\'' +
-                ", role=" + role +
-                ", active=" + active +
-                '}';
     }
 }

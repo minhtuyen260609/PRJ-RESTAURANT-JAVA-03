@@ -1,17 +1,15 @@
 package org.example.model;
 
-import org.example.constant.TableStatus;
-
 public class RestaurantTable {
     private int id;
     private String name;
     private int capacity;
-    private TableStatus status;
+    private String status;
 
     public RestaurantTable() {
     }
 
-    public RestaurantTable(int id, String name, int capacity, TableStatus status) {
+    public RestaurantTable(int id, String name, int capacity, String status) {
         this.id = id;
         this.name = name;
         this.capacity = capacity;
@@ -42,21 +40,11 @@ public class RestaurantTable {
         this.capacity = capacity;
     }
 
-    public TableStatus getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(TableStatus status) {
+    public void setStatus(String status) {
         this.status = status;
-    }
-
-    @Override
-    public String toString() {
-        return "RestaurantTable{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", capacity=" + capacity +
-                ", status=" + status +
-                '}';
     }
 }
