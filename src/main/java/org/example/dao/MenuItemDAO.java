@@ -122,4 +122,39 @@ public class MenuItemDAO {
 
         return menuList;
     }
+
+    public MenuItem findById(Connection connection, int id) throws Exception {
+        String sql = "select * from menu_items where id = ?";
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, id);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return mapMenuItem(resultSet);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public boolean updateQuantity(Connection connection, int id, int quantity) throws Exception {
+        String sql = "update menu_items set quantity = ? where id = ?";
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, quantity);
+            statement.setInt(2, id);
+            return statement.executeUpdate() > 0;
+        }
+    }
+
+    private MenuItem mapMenuItem(ResultSet resultSet) throws Exception {
+        MenuItem menuItem = new MenuItem();
+        menuItem.setId(resultSet.getInt("id"));
+        menuItem.setName(resultSet.getString("name"));
+        menuItem.setPrice(resultSet.getDouble("price"));
+        menuItem.setQuantity(resultSet.getInt("quantity"));
+        return menuItem;
+    }
 }

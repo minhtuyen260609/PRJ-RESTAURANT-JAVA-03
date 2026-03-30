@@ -97,4 +97,64 @@ public class TableDAO {
 
         return tableList;
     }
+
+    public List<RestaurantTable> findFreeTables() {
+        List<RestaurantTable> tableList = new ArrayList<>();
+        String sql = "select * from tables where lower(status) = 'empty' order by id";
+
+        try (Connection connection = DBConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                tableList.add(mapTable(resultSet));
+            }
+        } catch (Exception e) {
+            System.out.println("Loi lay danh sach ban trong: " + e.getMessage());
+        }
+
+        return tableList;
+    }
+
+    public RestaurantTable findById(Connection connection, int id) throws Exception {
+        String sql = "select * from tables where id = ?";
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, id);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return mapTable(resultSet);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public boolean occupyTable(Connection connection, int id) throws Exception {
+        String sql = "update tables set status = 'occupied' where id = ? and lower(status) = 'empty'";
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, id);
+            return statement.executeUpdate() > 0;
+        }
+    }
+
+    public boolean freeTable(Connection connection, int id) throws Exception {
+        String sql = "update tables set status = 'empty' where id = ?";
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, id);
+            return statement.executeUpdate() > 0;
+        }
+    }
+
+    private RestaurantTable mapTable(ResultSet resultSet) throws Exception {
+        RestaurantTable table = new RestaurantTable();
+        table.setId(resultSet.getInt("id"));
+        table.setName(resultSet.getString("name"));
+        table.setCapacity(resultSet.getInt("capacity"));
+        table.setStatus(resultSet.getString("status"));
+        return table;
+    }
 }

@@ -1,23 +1,30 @@
 package org.example.presentation;
 
 import org.example.model.MenuItem;
+import org.example.model.Order;
+import org.example.model.OrderDetail;
 import org.example.model.RestaurantTable;
 import org.example.model.User;
 import org.example.service.MenuService;
+import org.example.service.OrderService;
 import org.example.service.TableService;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 public class CustomerPresentation {
     private final Scanner scanner;
     private final MenuService menuService;
     private final TableService tableService;
+    private final OrderService orderService;
 
-    public CustomerPresentation(Scanner scanner, MenuService menuService, TableService tableService) {
+    public CustomerPresentation(Scanner scanner, MenuService menuService, TableService tableService, OrderService orderService) {
         this.scanner = scanner;
         this.menuService = menuService;
         this.tableService = tableService;
+        this.orderService = orderService;
     }
 
     public void showMenu(User user) {
@@ -41,13 +48,13 @@ public class CustomerPresentation {
                     showTableList();
                     break;
                 case 3:
-                    showOrderScreen();
+                    showOrderScreen(user);
                     break;
                 case 4:
-                    System.out.println("Giao dien theo doi mon da goi da san sang. Chua noi logic.");
+                    showOrderedItems(user);
                     break;
                 case 5:
-                    System.out.println("Giao dien huy goi do da san sang. Chua noi logic.");
+                    cancelOrderedItem(user);
                     break;
                 case 0:
                     return;
@@ -89,13 +96,124 @@ public class CustomerPresentation {
         }
     }
 
-    private void showOrderScreen() {
+    private void showOrderScreen(User user) {
         System.out.println("\n----- CHON BAN VA GOI MON -----");
-        showTableList();
-        InputPresentation.readInt(scanner, "Nhap id ban muon chon: ");
-        showMenuList();
-        InputPresentation.readInt(scanner, "Nhap id mon muon goi: ");
-        InputPresentation.readInt(scanner, "Nhap so luong: ");
-        System.out.println("Giao dien goi mon da san sang. Chua noi logic.");
+        List<RestaurantTable> freeTables = tableService.getFreeTables();
+        if (freeTables.isEmpty()) {
+            System.out.println("Hien tai khong con ban trong.");
+            return;
+        }
+
+        System.out.println("Danh sach ban trong:");
+        printTables(freeTables);
+        int tableId = InputPresentation.readInt(scanner, "Nhap id ban muon chon: ");
+
+        RestaurantTable selectedTable = tableService.findById(tableId);
+        if (selectedTable == null) {
+            System.out.println("Khong tim thay ban.");
+            return;
+        }
+        if (!isAvailableStatus(selectedTable.getStatus())) {
+            System.out.println("Ban nay da co khach. Vui long chon ban khac.");
+            return;
+        }
+
+        List<MenuItem> menuItems = menuService.getAllMenuItems();
+        if (menuItems.isEmpty()) {
+            System.out.println("Chua co mon nao de goi.");
+            return;
+        }
+
+        Map<Integer, Integer> selectedItems = new LinkedHashMap<>();
+        while (true) {
+            showMenuList();
+            int menuItemId = InputPresentation.readInt(scanner, "Nhap id mon muon goi (0 de ket thuc): ");
+            if (menuItemId == 0) {
+                break;
+            }
+
+            MenuItem menuItem = menuService.findById(menuItemId);
+            if (menuItem == null) {
+                System.out.println("Khong tim thay mon.");
+                continue;
+            }
+
+            int quantity = InputPresentation.readInt(scanner, "Nhap so luong: ");
+            if (quantity <= 0) {
+                System.out.println("So luong phai lon hon 0.");
+                continue;
+            }
+
+            selectedItems.put(menuItemId, selectedItems.getOrDefault(menuItemId, 0) + quantity);
+            System.out.println("Da them " + menuItem.getName() + " x" + quantity);
+        }
+
+        if (selectedItems.isEmpty()) {
+            System.out.println("Ban chua chon mon nao.");
+            return;
+        }
+
+        try {
+            Order order = orderService.placeOrder(user.getId(), tableId, selectedItems);
+            System.out.println("Goi mon thanh cong.");
+            System.out.println("Ma don: " + order.getId());
+            System.out.println("Ban: " + selectedTable.getName() + " -> occupied");
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    private void showOrderedItems(User user) {
+        List<OrderDetail> orderDetails = orderService.getOrderedItemsByCustomer(user.getId());
+        if (orderDetails.isEmpty()) {
+            System.out.println("Ban chua goi mon nao.");
+            return;
+        }
+
+        System.out.println("\n----- MON DA GOI -----");
+        System.out.printf("%-5s %-8s %-25s %-10s %-12s%n",
+                "ID", "Order", "Ten mon", "So luong", "Trang thai");
+        for (OrderDetail orderDetail : orderDetails) {
+            System.out.printf("%-5d %-8d %-25s %-10d %-12s%n",
+                    orderDetail.getId(),
+                    orderDetail.getOrderId(),
+                    orderDetail.getMenuItemName(),
+                    orderDetail.getQuantity(),
+                    orderDetail.getStatus());
+        }
+    }
+
+    private void printTables(List<RestaurantTable> tables) {
+        System.out.printf("%-5s %-20s %-12s %-12s%n", "ID", "Ten ban", "Suc chua", "Trang thai");
+        for (RestaurantTable table : tables) {
+            System.out.printf("%-5d %-20s %-12d %-12s%n",
+                    table.getId(), table.getName(), table.getCapacity(), table.getStatus());
+        }
+    }
+
+    private boolean isAvailableStatus(String status) {
+        return "empty".equalsIgnoreCase(status);
+    }
+
+    private void cancelOrderedItem(User user) {
+        List<OrderDetail> orderDetails = orderService.getOrderedItemsByCustomer(user.getId());
+        if (orderDetails.isEmpty()) {
+            System.out.println("Ban chua goi mon nao.");
+            return;
+        }
+
+        showOrderedItems(user);
+        int orderDetailId = InputPresentation.readInt(scanner, "Nhap id mon muon huy: ");
+
+        try {
+            boolean result = orderService.cancelOrderDetail(user.getId(), orderDetailId);
+            if (result) {
+                System.out.println("Huy mon thanh cong.");
+            } else {
+                System.out.println("Khong tim thay mon can huy.");
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
     }
 }

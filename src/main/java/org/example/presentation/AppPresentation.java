@@ -3,6 +3,7 @@ package org.example.presentation;
 import org.example.model.User;
 import org.example.service.AuthService;
 import org.example.service.MenuService;
+import org.example.service.OrderService;
 import org.example.service.TableService;
 
 import java.util.Scanner;
@@ -14,12 +15,12 @@ public class AppPresentation {
     private final ChefPresentation chefPresentation;
     private final CustomerPresentation customerPresentation;
 
-    public AppPresentation(AuthService authService, MenuService menuService, TableService tableService) {
+    public AppPresentation(AuthService authService, MenuService menuService, TableService tableService, OrderService orderService) {
         this.scanner = new Scanner(System.in);
         this.authPresentation = new AuthPresentation(scanner, authService);
         this.adminPresentation = new AdminPresentation(scanner, menuService, tableService);
         this.chefPresentation = new ChefPresentation(scanner, menuService);
-        this.customerPresentation = new CustomerPresentation(scanner, menuService, tableService);
+        this.customerPresentation = new CustomerPresentation(scanner, menuService, tableService, orderService);
     }
 
     public void start() {

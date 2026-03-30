@@ -2,7 +2,6 @@ package org.example.service;
 
 import org.example.dao.TableDAO;
 import org.example.model.RestaurantTable;
-
 import java.util.List;
 
 public class TableService {
@@ -34,7 +33,6 @@ public class TableService {
         }
         return tableDAO.updateTable(id, name.trim(), capacity);
     }
-
     public boolean deleteTable(int id) {
         if (tableDAO.findById(id) == null) {
             return false;
@@ -42,9 +40,11 @@ public class TableService {
 
         return tableDAO.deleteTable(id);
     }
-
     public List<RestaurantTable> getAllTables() {
         return tableDAO.findAll();
+    }
+    public List<RestaurantTable> getFreeTables() {
+        return tableDAO.findFreeTables();
     }
     public RestaurantTable findById(int id) {
         return tableDAO.findById(id);
