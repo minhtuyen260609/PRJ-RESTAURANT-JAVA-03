@@ -192,7 +192,7 @@ public class CustomerPresentation {
     }
 
     private boolean isAvailableStatus(String status) {
-        return "empty".equalsIgnoreCase(status);
+        return "free".equalsIgnoreCase(status);
     }
 
     private void cancelOrderedItem(User user) {

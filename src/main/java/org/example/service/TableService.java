@@ -18,7 +18,7 @@ public class TableService {
         if (capacity <= 0) {
             return false;
         }
-        return tableDAO.insertTable(name.trim(), capacity, "empty");
+        return tableDAO.insertTable(name.trim(), capacity, "free");
     }
 
     public boolean updateTable(int id, String name, int capacity) {

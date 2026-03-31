@@ -17,7 +17,7 @@ public class MenuService {
         if (price <= 0) {
             return false;
         }
-        if (quantity < 0) {
+        if (quantity <= 0) {
             return false;
         }
         return menuItemDAO.insertMenuItem(name.trim(), price, quantity);
@@ -33,7 +33,7 @@ public class MenuService {
         if (price <= 0) {
             return false;
         }
-        if (quantity < 0) {
+        if (quantity <= 0) {
             return false;
         }
 

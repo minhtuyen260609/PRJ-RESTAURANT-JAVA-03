@@ -1,10 +1,8 @@
 package org.example.service;
 
-import org.example.dao.MenuItemDAO;
 import org.example.dao.OrderDAO;
 import org.example.dao.OrderDetailDAO;
 import org.example.dao.TableDAO;
-import org.example.model.MenuItem;
 import org.example.model.Order;
 import org.example.model.OrderDetail;
 import org.example.model.RestaurantTable;
@@ -18,13 +16,11 @@ public class OrderService {
     private final OrderDAO orderDAO;
     private final OrderDetailDAO orderDetailDAO;
     private final TableDAO tableDAO;
-    private final MenuItemDAO menuItemDAO;
 
     public OrderService() {
         this.orderDAO = new OrderDAO();
         this.orderDetailDAO = new OrderDetailDAO();
         this.tableDAO = new TableDAO();
-        this.menuItemDAO = new MenuItemDAO();
     }
 
     public Order placeOrder(int userId, int tableId, Map<Integer, Integer> selectedItems) {
@@ -39,74 +35,47 @@ public class OrderService {
         }
 
         try (Connection connection = DBConnection.getConnection()) {
-            connection.setAutoCommit(false);
-
-            try {
-                RestaurantTable table = tableDAO.findById(connection, tableId);
-                if (table == null) {
-                    throw new IllegalStateException("Khong tim thay ban.");
-                }
-                if (!isAvailableStatus(table.getStatus())) {
-                    throw new IllegalStateException("Ban nay da co khach. Vui long chon ban khac.");
-                }
-
-                boolean occupied = tableDAO.occupyTable(connection, tableId);
-                if (!occupied) {
-                    throw new IllegalStateException("Khong giu duoc ban. Vui long thu lai.");
-                }
-
-                for (Map.Entry<Integer, Integer> entry : selectedItems.entrySet()) {
-                    int menuItemId = entry.getKey();
-                    int quantity = entry.getValue();
-
-                    if (quantity <= 0) {
-                        throw new IllegalArgumentException("So luong mon phai lon hon 0.");
-                    }
-
-                    MenuItem menuItem = menuItemDAO.findById(connection, menuItemId);
-                    if (menuItem == null) {
-                        throw new IllegalStateException("Khong tim thay mon co id = " + menuItemId);
-                    }
-                    if (menuItem.getQuantity() < quantity) {
-                        throw new IllegalStateException("Mon " + menuItem.getName() + " khong du so luong.");
-                    }
-
-                    boolean updated = menuItemDAO.updateQuantity(connection, menuItemId, menuItem.getQuantity() - quantity);
-                    if (!updated) {
-                        throw new IllegalStateException("Khong cap nhat duoc so luong mon.");
-                    }
-                }
-
-                int orderId = orderDAO.insertOrder(connection, userId, tableId, "open");
-
-                for (Map.Entry<Integer, Integer> entry : selectedItems.entrySet()) {
-                    boolean inserted = orderDetailDAO.insertOrderDetail(
-                            connection,
-                            orderId,
-                            entry.getKey(),
-                            entry.getValue(),
-                            "pending"
-                    );
-
-                    if (!inserted) {
-                        throw new IllegalStateException("Khong luu duoc chi tiet don hang.");
-                    }
-                }
-
-                connection.commit();
-
-                Order order = new Order();
-                order.setId(orderId);
-                order.setUserId(userId);
-                order.setTableId(tableId);
-                order.setStatus("open");
-                return order;
-            } catch (Exception e) {
-                connection.rollback();
-                throw e;
-            } finally {
-                connection.setAutoCommit(true);
+            RestaurantTable table = tableDAO.findById(connection, tableId);
+            if (table == null) {
+                throw new IllegalStateException("Khong tim thay ban.");
             }
+            if (!isAvailableStatus(table.getStatus())) {
+                throw new IllegalStateException("Ban nay da co khach. Vui long chon ban khac.");
+            }
+
+            for (Map.Entry<Integer, Integer> entry : selectedItems.entrySet()) {
+                if (entry.getValue() <= 0) {
+                    throw new IllegalArgumentException("So luong mon phai lon hon 0.");
+                }
+            }
+
+            boolean occupied = tableDAO.occupyTable(connection, tableId);
+            if (!occupied) {
+                throw new IllegalStateException("Khong giu duoc ban. Vui long thu lai.");
+            }
+
+            int orderId = orderDAO.insertOrder(connection, userId, tableId, "open");
+
+            for (Map.Entry<Integer, Integer> entry : selectedItems.entrySet()) {
+                boolean inserted = orderDetailDAO.insertOrderDetail(
+                        connection,
+                        orderId,
+                        entry.getKey(),
+                        entry.getValue(),
+                        "pending"
+                );
+
+                if (!inserted) {
+                    throw new IllegalStateException("Khong luu duoc chi tiet don hang.");
+                }
+            }
+
+            Order order = new Order();
+            order.setId(orderId);
+            order.setUserId(userId);
+            order.setTableId(tableId);
+            order.setStatus("open");
+            return order;
         } catch (IllegalArgumentException | IllegalStateException e) {
             throw e;
         } catch (Exception e) {
@@ -126,11 +95,29 @@ public class OrderService {
         return orderDetailDAO.findByCustomerId(customerId);
     }
 
-    public boolean cancelOrderDetail(int customerId, int orderDetailId) {
-        if (!orderDetailDAO.belongsToCustomer(orderDetailId, customerId)) {
+    public List<OrderDetail> getKitchenItems() {
+        return orderDetailDAO.findKitchenItems();
+    }
+
+    public boolean advanceOrderDetailStatus(int orderDetailId) {
+        if (orderDetailId <= 0) {
+            throw new IllegalArgumentException("Id mon khong hop le.");
+        }
+
+        OrderDetail orderDetail = orderDetailDAO.findById(orderDetailId);
+        if (orderDetail == null) {
             return false;
         }
 
+        String nextStatus = getNextStatus(orderDetail.getStatus());
+        if (nextStatus == null) {
+            throw new IllegalStateException("Mon nay da hoan tat, khong can cap nhat them.");
+        }
+
+        return orderDetailDAO.updateStatus(orderDetailId, nextStatus);
+    }
+
+    public boolean cancelOrderDetail(int customerId, int orderDetailId) {
         OrderDetail orderDetail = orderDetailDAO.findById(orderDetailId);
         if (orderDetail == null) {
             return false;
@@ -140,45 +127,21 @@ public class OrderService {
         }
 
         try (Connection connection = DBConnection.getConnection()) {
-            connection.setAutoCommit(false);
-
-            try {
-                MenuItem menuItem = menuItemDAO.findById(connection, orderDetail.getMenuItemId());
-                if (menuItem == null) {
-                    throw new IllegalStateException("Khong tim thay mon de hoan lai ton kho.");
-                }
-
-                boolean restored = menuItemDAO.updateQuantity(
-                        connection,
-                        orderDetail.getMenuItemId(),
-                        menuItem.getQuantity() + orderDetail.getQuantity()
-                );
-                if (!restored) {
-                    throw new IllegalStateException("Khong hoan lai duoc ton kho.");
-                }
-
-                boolean deleted = orderDetailDAO.deleteById(connection, orderDetailId);
-                if (!deleted) {
-                    throw new IllegalStateException("Khong huy duoc mon.");
-                }
-
-                if (!orderDetailDAO.hasItemsInOrder(connection, orderDetail.getOrderId())) {
-                    Order order = orderDAO.findById(connection, orderDetail.getOrderId());
-                    if (order == null) {
-                        throw new IllegalStateException("Khong tim thay don hang.");
-                    }
-                    orderDAO.closeOrder(connection, orderDetail.getOrderId());
-                    tableDAO.freeTable(connection, order.getTableId());
-                }
-
-                connection.commit();
-                return true;
-            } catch (Exception e) {
-                connection.rollback();
-                throw e;
-            } finally {
-                connection.setAutoCommit(true);
+            boolean deleted = orderDetailDAO.deleteById(connection, orderDetailId);
+            if (!deleted) {
+                throw new IllegalStateException("Khong huy duoc mon.");
             }
+
+            if (!orderDetailDAO.hasItemsInOrder(connection, orderDetail.getOrderId())) {
+                Order order = orderDAO.findById(connection, orderDetail.getOrderId());
+                if (order == null) {
+                    throw new IllegalStateException("Khong tim thay don hang.");
+                }
+                orderDAO.closeOrder(connection, orderDetail.getOrderId());
+                tableDAO.freeTable(connection, order.getTableId());
+            }
+
+            return true;
         } catch (IllegalStateException e) {
             throw e;
         } catch (Exception e) {
@@ -187,6 +150,19 @@ public class OrderService {
     }
 
     private boolean isAvailableStatus(String status) {
-        return "empty".equalsIgnoreCase(status);
+        return "free".equalsIgnoreCase(status);
+    }
+
+    private String getNextStatus(String currentStatus) {
+        if ("pending".equalsIgnoreCase(currentStatus)) {
+            return "cooking";
+        }
+        if ("cooking".equalsIgnoreCase(currentStatus)) {
+            return "ready";
+        }
+        if ("ready".equalsIgnoreCase(currentStatus)) {
+            return "served";
+        }
+        return null;
     }
 }

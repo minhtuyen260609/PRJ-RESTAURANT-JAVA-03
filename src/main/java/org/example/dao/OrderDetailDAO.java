@@ -89,6 +89,69 @@ public class OrderDetailDAO {
         return orderDetails;
     }
 
+    public List<OrderDetail> findByStatus(String status) {
+        List<OrderDetail> orderDetails = new ArrayList<>();
+        String sql = """
+                select od.id, od.order_id, od.menu_item_id, od.quantity, od.status, mi.name as menu_item_name
+                from order_details od
+                join menu_items mi on mi.id = od.menu_item_id
+                where lower(od.status) = lower(?)
+                order by od.id asc
+                """;
+
+        try (Connection connection = DBConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, status);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    OrderDetail orderDetail = new OrderDetail();
+                    orderDetail.setId(resultSet.getInt("id"));
+                    orderDetail.setOrderId(resultSet.getInt("order_id"));
+                    orderDetail.setMenuItemId(resultSet.getInt("menu_item_id"));
+                    orderDetail.setQuantity(resultSet.getInt("quantity"));
+                    orderDetail.setMenuItemName(resultSet.getString("menu_item_name"));
+                    orderDetail.setStatus(resultSet.getString("status"));
+                    orderDetails.add(orderDetail);
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Loi lay mon theo trang thai: " + e.getMessage());
+        }
+
+        return orderDetails;
+    }
+
+    public List<OrderDetail> findKitchenItems() {
+        List<OrderDetail> orderDetails = new ArrayList<>();
+        String sql = """
+                select od.id, od.order_id, od.menu_item_id, od.quantity, od.status, mi.name as menu_item_name
+                from order_details od
+                join menu_items mi on mi.id = od.menu_item_id
+                where lower(od.status) <> 'served'
+                order by od.id asc
+                """;
+
+        try (Connection connection = DBConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                OrderDetail orderDetail = new OrderDetail();
+                orderDetail.setId(resultSet.getInt("id"));
+                orderDetail.setOrderId(resultSet.getInt("order_id"));
+                orderDetail.setMenuItemId(resultSet.getInt("menu_item_id"));
+                orderDetail.setQuantity(resultSet.getInt("quantity"));
+                orderDetail.setMenuItemName(resultSet.getString("menu_item_name"));
+                orderDetail.setStatus(resultSet.getString("status"));
+                orderDetails.add(orderDetail);
+            }
+        } catch (Exception e) {
+            System.out.println("Loi lay danh sach bep: " + e.getMessage());
+        }
+
+        return orderDetails;
+    }
+
     public OrderDetail findById(int id) {
         String sql = """
                 select od.id, od.order_id, od.menu_item_id, od.quantity, od.status, mi.name as menu_item_name

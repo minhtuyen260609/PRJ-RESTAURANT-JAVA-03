@@ -91,10 +91,9 @@ public class AdminPresentation {
 
     private void addMenuItem() {
         System.out.println("\n----- THEM MON -----");
-        System.out.print("Nhap ten mon: ");
-        String name = scanner.nextLine();
-        double price = InputPresentation.readDouble(scanner, "Nhap gia: ");
-        int quantity = InputPresentation.readInt(scanner, "Nhap so luong: ");
+        String name = readMenuItemName("Nhap ten mon: ");
+        double price = readMenuItemPrice("Nhap gia: ");
+        int quantity = readMenuItemQuantity("Nhap so luong: ");
 
         boolean result = menuService.addMenuItem(name, price, quantity);
         if (result) {
@@ -116,10 +115,9 @@ public class AdminPresentation {
         }
 
         System.out.println("Thong tin hien tai: " + oldItem.getName() + " - " + oldItem.getPrice() + " - " + oldItem.getQuantity());
-        System.out.print("Nhap ten mon moi: ");
-        String name = scanner.nextLine();
-        double price = InputPresentation.readDouble(scanner, "Nhap gia moi: ");
-        int quantity = InputPresentation.readInt(scanner, "Nhap so luong moi: ");
+        String name = readMenuItemName("Nhap ten mon moi: ");
+        double price = readMenuItemPrice("Nhap gia moi: ");
+        int quantity = readMenuItemQuantity("Nhap so luong moi: ");
 
         boolean result = menuService.updateMenuItem(id, name, price, quantity);
         if (result) {
@@ -189,9 +187,8 @@ public class AdminPresentation {
 
     private void addTable() {
         System.out.println("\n----- THEM BAN -----");
-        System.out.print("Nhap ten ban: ");
-        String name = scanner.nextLine();
-        int capacity = InputPresentation.readInt(scanner, "Nhap suc chua: ");
+        String name = readTableName("Nhap ten ban: ");
+        int capacity = readTableCapacity("Nhap suc chua: ");
 
         boolean result = tableService.addTable(name, capacity);
         if (result) {
@@ -213,9 +210,8 @@ public class AdminPresentation {
         }
 
         System.out.println("Thong tin hien tai: " + oldTable.getName() + " - " + oldTable.getCapacity());
-        System.out.print("Nhap ten ban moi: ");
-        String name = scanner.nextLine();
-        int capacity = InputPresentation.readInt(scanner, "Nhap suc chua moi: ");
+        String name = readTableName("Nhap ten ban moi: ");
+        int capacity = readTableCapacity("Nhap suc chua moi: ");
 
         boolean result = tableService.updateTable(id, name, capacity);
         if (result) {
@@ -247,6 +243,58 @@ public class AdminPresentation {
             System.out.println("Xoa ban thanh cong.");
         } else {
             System.out.println("Xoa ban that bai.");
+        }
+    }
+
+    private String readMenuItemName(String message) {
+        while (true) {
+            System.out.print(message);
+            String name = scanner.nextLine();
+            if (name != null && !name.trim().isEmpty()) {
+                return name;
+            }
+            System.out.println("Chua nhap ten mon.");
+        }
+    }
+
+    private double readMenuItemPrice(String message) {
+        while (true) {
+            double price = InputPresentation.readDouble(scanner, message);
+            if (price > 0) {
+                return price;
+            }
+            System.out.println("Gia phai lon hon 0.");
+        }
+    }
+
+    private int readMenuItemQuantity(String message) {
+        while (true) {
+            int quantity = InputPresentation.readInt(scanner, message);
+            if (quantity > 0) {
+                return quantity;
+            }
+            System.out.println("So luong phai lon hon 0.");
+        }
+    }
+
+    private String readTableName(String message) {
+        while (true) {
+            System.out.print(message);
+            String name = scanner.nextLine();
+            if (name != null && !name.trim().isEmpty()) {
+                return name;
+            }
+            System.out.println("Chua nhap ten ban.");
+        }
+    }
+
+    private int readTableCapacity(String message) {
+        while (true) {
+            int capacity = InputPresentation.readInt(scanner, message);
+            if (capacity > 0) {
+                return capacity;
+            }
+            System.out.println("So nguoi phai lon hon 0.");
         }
     }
 }

@@ -25,7 +25,7 @@ public class AuthPresentation {
         if (result) {
             System.out.println("Dang ky thanh cong.");
         } else {
-            System.out.println("Dang ky that bai. Username co the da ton tai hoac du lieu rong.");
+            System.out.println("Dang ky that bai. Username da ton tai.");
         }
     }
 

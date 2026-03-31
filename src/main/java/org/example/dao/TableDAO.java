@@ -100,7 +100,7 @@ public class TableDAO {
 
     public List<RestaurantTable> findFreeTables() {
         List<RestaurantTable> tableList = new ArrayList<>();
-        String sql = "select * from tables where lower(status) = 'empty' order by id";
+        String sql = "select * from tables where lower(status) = 'free' order by id";
 
         try (Connection connection = DBConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql);
@@ -132,7 +132,7 @@ public class TableDAO {
     }
 
     public boolean occupyTable(Connection connection, int id) throws Exception {
-        String sql = "update tables set status = 'occupied' where id = ? and lower(status) = 'empty'";
+        String sql = "update tables set status = 'occupied' where id = ? and lower(status) = 'free'";
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
@@ -141,7 +141,7 @@ public class TableDAO {
     }
 
     public boolean freeTable(Connection connection, int id) throws Exception {
-        String sql = "update tables set status = 'empty' where id = ?";
+        String sql = "update tables set status = 'free' where id = ?";
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);

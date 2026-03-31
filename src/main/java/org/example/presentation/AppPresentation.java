@@ -19,7 +19,7 @@ public class AppPresentation {
         this.scanner = new Scanner(System.in);
         this.authPresentation = new AuthPresentation(scanner, authService);
         this.adminPresentation = new AdminPresentation(scanner, menuService, tableService);
-        this.chefPresentation = new ChefPresentation(scanner, menuService);
+        this.chefPresentation = new ChefPresentation(scanner, orderService);
         this.customerPresentation = new CustomerPresentation(scanner, menuService, tableService, orderService);
     }
 
