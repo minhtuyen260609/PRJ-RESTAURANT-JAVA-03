@@ -9,13 +9,6 @@ public class RestaurantTable {
     public RestaurantTable() {
     }
 
-    public RestaurantTable(int id, String name, int capacity, String status) {
-        this.id = id;
-        this.name = name;
-        this.capacity = capacity;
-        this.status = status;
-    }
-
     public int getId() {
         return id;
     }

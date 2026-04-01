@@ -14,5 +14,5 @@ create table if not exists order_details (
 );
 
 update tables
-set status = 'empty'
-where upper(status) = 'EMPTY';
+set status = 'free'
+where lower(status) = 'empty';

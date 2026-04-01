@@ -7,9 +7,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.List;
-
 public class OrderDAO {
     public int insertOrder(Connection connection, int userId, int tableId, String status) throws Exception {
         String sql = "insert into orders(user_id, table_id, status) values (?, ?, ?)";
@@ -28,26 +25,6 @@ public class OrderDAO {
         }
 
         throw new IllegalStateException("Khong tao duoc don hang.");
-    }
-
-    public List<Order> findByUserId(int userId) {
-        List<Order> orders = new ArrayList<>();
-        String sql = "select * from orders where user_id = ? order by id desc";
-
-        try (Connection connection = DBConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, userId);
-
-            try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    orders.add(mapOrder(resultSet));
-                }
-            }
-        } catch (Exception e) {
-            System.out.println("Loi lay danh sach don hang: " + e.getMessage());
-        }
-
-        return orders;
     }
 
     private Order mapOrder(ResultSet resultSet) throws Exception {

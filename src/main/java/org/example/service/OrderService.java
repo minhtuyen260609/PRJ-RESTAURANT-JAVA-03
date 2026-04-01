@@ -1,8 +1,10 @@
 package org.example.service;
 
+import org.example.dao.MenuItemDAO;
 import org.example.dao.OrderDAO;
 import org.example.dao.OrderDetailDAO;
 import org.example.dao.TableDAO;
+import org.example.model.MenuItem;
 import org.example.model.Order;
 import org.example.model.OrderDetail;
 import org.example.model.RestaurantTable;
@@ -13,11 +15,13 @@ import java.util.List;
 import java.util.Map;
 
 public class OrderService {
+    private final MenuItemDAO menuItemDAO;
     private final OrderDAO orderDAO;
     private final OrderDetailDAO orderDetailDAO;
     private final TableDAO tableDAO;
 
     public OrderService() {
+        this.menuItemDAO = new MenuItemDAO();
         this.orderDAO = new OrderDAO();
         this.orderDetailDAO = new OrderDetailDAO();
         this.tableDAO = new TableDAO();
@@ -47,6 +51,17 @@ public class OrderService {
                 if (entry.getValue() <= 0) {
                     throw new IllegalArgumentException("So luong mon phai lon hon 0.");
                 }
+
+                MenuItem menuItem = menuItemDAO.findById(connection, entry.getKey());
+                if (menuItem == null) {
+                    throw new IllegalStateException("Khong tim thay mon co id = " + entry.getKey());
+                }
+
+                if (menuItem.getQuantity() < entry.getValue()) {
+                    throw new IllegalStateException(
+                            "Mon " + menuItem.getName() + " chi con " + menuItem.getQuantity() + " phan."
+                    );
+                }
             }
 
             boolean occupied = tableDAO.occupyTable(connection, tableId);
@@ -57,6 +72,7 @@ public class OrderService {
             int orderId = orderDAO.insertOrder(connection, userId, tableId, "open");
 
             for (Map.Entry<Integer, Integer> entry : selectedItems.entrySet()) {
+                MenuItem menuItem = menuItemDAO.findById(connection, entry.getKey());
                 boolean inserted = orderDetailDAO.insertOrderDetail(
                         connection,
                         orderId,
@@ -67,6 +83,15 @@ public class OrderService {
 
                 if (!inserted) {
                     throw new IllegalStateException("Khong luu duoc chi tiet don hang.");
+                }
+
+                boolean updatedQuantity = menuItemDAO.updateQuantity(
+                        connection,
+                        entry.getKey(),
+                        menuItem.getQuantity() - entry.getValue()
+                );
+                if (!updatedQuantity) {
+                    throw new IllegalStateException("Khong cap nhat duoc so luong mon.");
                 }
             }
 
@@ -81,14 +106,6 @@ public class OrderService {
         } catch (Exception e) {
             throw new IllegalStateException("Loi xu ly don hang: " + e.getMessage(), e);
         }
-    }
-
-    public List<Order> getOrdersByCustomer(int customerId) {
-        return orderDAO.findByUserId(customerId);
-    }
-
-    public List<OrderDetail> getOrderDetails(int orderId) {
-        return orderDetailDAO.findByOrderId(orderId);
     }
 
     public List<OrderDetail> getOrderedItemsByCustomer(int customerId) {
